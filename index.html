@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#07070c" />
+    <meta
+      name="description"
+      content="A tiny browser maze game. You are a wizard who can see only the tile you stand on. Find the way out."
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Wandering Wizard</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="hud">
+        <h1 class="hud__title">Wandering Wizard</h1>
+        <p class="hud__meta" id="maze-label">Maze &mdash;</p>
+      </header>
+
+      <main class="view">
+        <!--
+          The maze is drawn at 100 user units per tile. render.js sets the
+          viewBox so that a little over one tile is on screen at any time, and
+          translates the world group to keep the wizard's tile centred.
+        -->
+        <svg
+          class="stage"
+          id="stage"
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-labelledby="stage-title"
+        >
+          <title id="stage-title">The tile the wizard is standing on</title>
+          <defs id="stage-defs"></defs>
+          <g id="world">
+            <g id="tiles"></g>
+          </g>
+          <!-- The wizard never moves on screen: the world slides beneath. -->
+          <g id="wizard"></g>
+        </svg>
+      </main>
+
+      <nav class="controls" id="controls" aria-label="Movement">
+        <button class="pad pad--forward" type="button" data-move="forward" aria-label="Move forward">
+          <span class="pad__arrow" aria-hidden="true"></span>
+          <span class="pad__label">Forward</span>
+        </button>
+        <button class="pad pad--left" type="button" data-move="left" aria-label="Move left">
+          <span class="pad__arrow" aria-hidden="true"></span>
+          <span class="pad__label">Left</span>
+        </button>
+        <span class="pad__rune" aria-hidden="true"></span>
+        <button class="pad pad--right" type="button" data-move="right" aria-label="Move right">
+          <span class="pad__arrow" aria-hidden="true"></span>
+          <span class="pad__label">Right</span>
+        </button>
+        <button class="pad pad--back" type="button" data-move="back" aria-label="Move back">
+          <span class="pad__arrow" aria-hidden="true"></span>
+          <span class="pad__label">Back</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="overlay" id="win-overlay" hidden>
+      <div class="overlay__card" role="alertdialog" aria-labelledby="win-title">
+        <p class="overlay__spark" aria-hidden="true">&#10022;</p>
+        <h2 class="overlay__title" id="win-title">Ye hath escaped!</h2>
+        <button class="button" type="button" id="new-maze">Try new map</button>
+      </div>
+    </div>
+
+    <p class="visually-hidden" id="announcer" role="status" aria-live="polite"></p>
+
+    <script src="js/mazes.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/game.js"></script>
+  </body>
+</html>
