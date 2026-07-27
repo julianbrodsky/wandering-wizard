@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Wandering Wizard</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/style.css?v=2" />
   </head>
   <body>
     <div class="app">
@@ -79,8 +79,13 @@
 
     <p class="visually-hidden" id="announcer" role="status" aria-live="polite"></p>
 
-    <script src="js/mazes.js"></script>
-    <script src="js/render.js"></script>
-    <script src="js/game.js"></script>
+    <!--
+      GitHub Pages caches each file independently for ten minutes, so a
+      returning player can otherwise end up with a fresh index.html and a
+      stale script. Bump ?v= whenever the CSS or JS changes.
+    -->
+    <script src="js/mazes.js?v=2"></script>
+    <script src="js/render.js?v=2"></script>
+    <script src="js/game.js?v=2"></script>
   </body>
 </html>
