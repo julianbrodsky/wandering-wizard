@@ -16,13 +16,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Wandering Wizard</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="css/style.css?v=2" />
+    <link rel="stylesheet" href="css/style.css?v=3" />
   </head>
   <body>
     <div class="app">
       <header class="hud">
         <h1 class="hud__title">Wandering Wizard</h1>
-        <p class="hud__meta" id="maze-label">Maze &mdash;</p>
+        <div class="hud__status">
+          <p class="hud__timer" id="timer">0:00</p>
+          <p class="hud__meta" id="maze-label">Maze &mdash;</p>
+        </div>
       </header>
 
       <main class="view">
@@ -73,7 +76,25 @@
       <div class="overlay__card" role="alertdialog" aria-labelledby="win-title">
         <p class="overlay__spark" aria-hidden="true">&#10022;</p>
         <h2 class="overlay__title" id="win-title">Ye hath escaped!</h2>
+        <p class="overlay__time">
+          <span class="overlay__time-label">Thy time</span>
+          <span class="overlay__time-value" id="win-time">0:00</span>
+        </p>
         <button class="button" type="button" id="new-maze">Try new map</button>
+        <button class="button button--ghost" type="button" id="share">
+          Share thy time
+        </button>
+        <p class="overlay__note" id="share-note" role="status" aria-live="polite"></p>
+        <!-- Shown only if the clipboard is unavailable, so there is always a
+             way to get the message out. -->
+        <input
+          class="overlay__field"
+          id="share-field"
+          type="text"
+          readonly
+          hidden
+          aria-label="Message to copy"
+        />
       </div>
     </div>
 
@@ -84,8 +105,8 @@
       returning player can otherwise end up with a fresh index.html and a
       stale script. Bump ?v= whenever the CSS or JS changes.
     -->
-    <script src="js/mazes.js?v=2"></script>
-    <script src="js/render.js?v=2"></script>
-    <script src="js/game.js?v=2"></script>
+    <script src="js/mazes.js?v=3"></script>
+    <script src="js/render.js?v=3"></script>
+    <script src="js/game.js?v=3"></script>
   </body>
 </html>

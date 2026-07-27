@@ -23,6 +23,10 @@ he just went.
 - **The exit** is the single gap in the outer wall. Reach it and you have
   escaped.
 
+The clock starts on your **first move**, not when the maze appears, so reading
+the room costs nothing. Your time is shown when you escape, and can be shared
+from there.
+
 On a desktop the arrow keys and `WASD` work too.
 
 ## Running it locally
@@ -68,6 +72,19 @@ south.
 **Illegal moves are hidden, not disabled.** A hidden button keeps its slot in
 the grid, so the pad never shifts under your thumb mid-maze, and it leaves the
 tab order and the accessibility tree along with the screen.
+
+**The clock reads a timestamp rather than counting ticks.** Background tabs
+throttle timers hard, so a tick-counting clock would quietly under-report a
+maze left open in another tab. Elapsed time is always `now - started`.
+
+**Sharing uses the native share sheet, with a real fallback.** `navigator.share`
+reaches every social app the player actually has and costs no third-party
+script — which matters here, since the page otherwise makes no external
+requests at all. Where it does not exist, the message goes to the clipboard;
+and because `clipboard.writeText` can reject *or* simply never settle on a
+document the browser considers hidden, an unanswered write falls back after a
+moment to showing the message on screen for a manual copy. Pressing the button
+always produces an answer.
 
 ## The maze data
 

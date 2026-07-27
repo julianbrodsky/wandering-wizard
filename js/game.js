@@ -89,6 +89,68 @@
   };
 
   /* ---------------------------------------------------------------- *
+   * The clock
+   * ---------------------------------------------------------------- */
+
+  /* Minutes and seconds. Anything past an hour just keeps counting minutes;
+   * a 5x5 maze that takes that long has earned the odd-looking number. */
+  function formatTime(ms) {
+    var total = Math.floor(ms / 1000);
+    var seconds = total % 60;
+    return Math.floor(total / 60) + ':' + (seconds < 10 ? '0' : '') + seconds;
+  }
+
+  /*
+   * Elapsed time is always derived from the starting timestamp rather than
+   * accumulated tick by tick. Background tabs throttle timers heavily, so
+   * counting ticks would quietly under-report a maze left open in another tab.
+   */
+  function Clock(node) {
+    this.node = node;
+    this.startedAt = null;
+    this.stoppedMs = null;
+    this.ticker = null;
+    this.render(0);
+  }
+
+  Clock.prototype.elapsed = function () {
+    if (this.stoppedMs !== null) return this.stoppedMs;
+    if (this.startedAt === null) return 0;
+    return Date.now() - this.startedAt;
+  };
+
+  Clock.prototype.start = function () {
+    if (this.startedAt !== null) return;
+    var self = this;
+    this.startedAt = Date.now();
+    this.ticker = setInterval(function () {
+      self.render(self.elapsed());
+    }, 200);
+  };
+
+  Clock.prototype.stop = function () {
+    if (this.startedAt !== null && this.stoppedMs === null) {
+      this.stoppedMs = Date.now() - this.startedAt;
+    }
+    if (this.ticker) clearInterval(this.ticker);
+    this.ticker = null;
+    this.render(this.elapsed());
+  };
+
+  Clock.prototype.reset = function () {
+    if (this.ticker) clearInterval(this.ticker);
+    this.ticker = null;
+    this.startedAt = null;
+    this.stoppedMs = null;
+    this.render(0);
+  };
+
+  Clock.prototype.render = function (ms) {
+    var text = formatTime(ms);
+    if (this.node.textContent !== text) this.node.textContent = text;
+  };
+
+  /* ---------------------------------------------------------------- *
    * Game
    * ---------------------------------------------------------------- */
 
@@ -96,6 +158,7 @@
     this.nodes = nodes;
     this.mazes = mazes;
     this.renderer = new global.WW.Renderer(nodes);
+    this.clock = new Clock(nodes.timer);
     this.busy = false;
     this.won = false;
     this.currentIndex = -1;
@@ -155,6 +218,8 @@
 
   Game.prototype.load = function (maze) {
     this.clearTimers();
+    this.clock.reset();
+    this.resetShare();
     this.maze = maze;
     this.pos = { r: maze.start.r, c: maze.start.c };
     this.facing = maze.facing;
@@ -204,6 +269,9 @@
 
     if (!this.moved) {
       this.moved = true;
+      // The clock runs from the first step, not from when the maze appeared,
+      // so reading the room costs nothing.
+      this.clock.start();
       // "Start" is a one-time marker; once the wizard leaves, it is gone.
       this.after(this.moveMs, this.renderer.hideStartRune.bind(this.renderer));
     }
@@ -249,12 +317,133 @@
   Game.prototype.finish = function () {
     var self = this;
     this.won = true;
+    // Stopped on the step that wins it, not when the card animates in.
+    this.clock.stop();
+
     this.after(this.moveMs + 420, function () {
+      self.nodes.winTime.textContent = formatTime(self.clock.elapsed());
       self.nodes.overlay.hidden = false;
       self.nodes.newMaze.focus();
-      self.announce('Ye hath escaped!');
+      self.announce('Ye hath escaped, in ' + formatTime(self.clock.elapsed()) + '.');
     });
   };
+
+  /* ---------------------------------------------------------------- *
+   * Sharing
+   * ---------------------------------------------------------------- */
+
+  Game.prototype.note = function (text) {
+    this.nodes.shareNote.textContent = text;
+  };
+
+  Game.prototype.shareMessage = function () {
+    return (
+      'I escaped maze ' + this.maze.id + ' of ' + this.mazes.length +
+      ' in ' + formatTime(this.clock.elapsed()) + '. Ye hath escaped!'
+    );
+  };
+
+  /*
+   * The native share sheet is the one route that reaches every social app the
+   * player actually has, and it costs no third-party script. Where it does not
+   * exist -- desktop, mostly -- fall back to putting the message on the
+   * clipboard so it can be pasted anywhere.
+   */
+  Game.prototype.share = function () {
+    var self = this;
+    var url = location.origin + location.pathname;
+    var message = this.shareMessage();
+
+    if (navigator.share) {
+      navigator
+        .share({ title: 'Wandering Wizard', text: message, url: url })
+        .then(function () {
+          self.note('');
+        })
+        .catch(function (error) {
+          // Dismissing the sheet is not a failure worth reporting.
+          if (error && error.name === 'AbortError') return;
+          self.copy(message + ' ' + url);
+        });
+      return;
+    }
+
+    this.copy(message + ' ' + url);
+  };
+
+  /*
+   * Copying has more ways to go quiet than to fail loudly: writeText rejects
+   * without permission, and on a document the browser considers hidden it
+   * simply never settles at all. Whatever happens, the player pressed a button
+   * and is owed an answer, so an unanswered write falls back to showing them
+   * the message to copy by hand.
+   */
+  Game.prototype.copy = function (payload) {
+    var self = this;
+    var settled = false;
+
+    var succeeded = function () {
+      if (settled) return;
+      settled = true;
+      self.note('Copied — paste it wherever you like.');
+    };
+
+    var giveUp = function () {
+      if (settled) return;
+      settled = true;
+      self.reveal(payload);
+    };
+
+    this.after(1200, giveUp);
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(payload).then(succeeded, function () {
+        if (legacyCopy(payload)) succeeded();
+        else giveUp();
+      });
+      return;
+    }
+
+    if (legacyCopy(payload)) succeeded();
+    else giveUp();
+  };
+
+  /** Last resort: put the message on screen, selected, for a manual copy. */
+  Game.prototype.reveal = function (payload) {
+    var field = this.nodes.shareField;
+    this.note('Copy this to share:');
+    field.value = payload;
+    field.hidden = false;
+    field.focus();
+    field.select();
+  };
+
+  Game.prototype.resetShare = function () {
+    this.note('');
+    this.nodes.shareField.hidden = true;
+    this.nodes.shareField.value = '';
+  };
+
+  /* execCommand is deprecated, but it is the only clipboard route left on an
+   * insecure origin -- opening index.html straight off disk, for instance. */
+  function legacyCopy(payload) {
+    var field = document.createElement('textarea');
+    field.value = payload;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.appendChild(field);
+    field.select();
+
+    var copied = false;
+    try {
+      copied = document.execCommand('copy');
+    } catch (error) {
+      copied = false;
+    }
+    document.body.removeChild(field);
+    return copied;
+  }
 
   /* ---------------------------------------------------------------- *
    * Controls
@@ -302,6 +491,10 @@
       self.loadRandomMaze();
     });
 
+    this.nodes.share.addEventListener('click', function () {
+      self.share();
+    });
+
     document.addEventListener('keydown', function (event) {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       var move = KEYS[event.key] || KEYS[event.key.toLowerCase()];
@@ -338,6 +531,11 @@
         controls: document.getElementById('controls'),
         overlay: document.getElementById('win-overlay'),
         newMaze: document.getElementById('new-maze'),
+        share: document.getElementById('share'),
+        shareNote: document.getElementById('share-note'),
+        shareField: document.getElementById('share-field'),
+        winTime: document.getElementById('win-time'),
+        timer: document.getElementById('timer'),
         label: document.getElementById('maze-label'),
         announcer: document.getElementById('announcer'),
         pads: pads(),
