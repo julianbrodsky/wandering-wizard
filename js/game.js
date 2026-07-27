@@ -7,9 +7,9 @@
  * you read the walls around you.
  *
  * Directions are stored as indices into WW.DIRS (0 north, 1 east, 2 south,
- * 3 west). A move is relative to where the wand points: the wizard turns to
- * face the chosen direction and steps into it, so "forward" is always
- * wherever they last went.
+ * 3 west). Moves are absolute -- "right" is right on the screen no matter
+ * which way the wizard happens to be pointing. Facing is cosmetic: the wizard
+ * turns his wand towards wherever he just went.
  */
 (function (global) {
   'use strict';
@@ -17,18 +17,19 @@
   var DIRS = global.WW.DIRS;
   var DIR_NAMES = ['N', 'E', 'S', 'W'];
 
-  /* Quarter-turns clockwise from the current facing. */
-  var RELATIVE = { forward: 0, right: 1, back: 2, left: 3 };
-  var MOVE_ORDER = ['forward', 'right', 'back', 'left'];
+  /* Each move names a compass direction on screen, not one relative to the
+   * wizard, so these line up with WW.DIRS exactly. */
+  var HEADING = { up: 0, right: 1, down: 2, left: 3 };
+  var MOVE_ORDER = ['up', 'right', 'down', 'left'];
 
   var KEYS = {
-    ArrowUp: 'forward',
+    ArrowUp: 'up',
     ArrowRight: 'right',
-    ArrowDown: 'back',
+    ArrowDown: 'down',
     ArrowLeft: 'left',
-    w: 'forward',
+    w: 'up',
     d: 'right',
-    s: 'back',
+    s: 'down',
     a: 'left',
   };
 
@@ -179,13 +180,8 @@
    * Moving
    * ---------------------------------------------------------------- */
 
-  /** Absolute direction index for a relative move from the current facing. */
-  Game.prototype.absolute = function (move) {
-    return (this.facing + RELATIVE[move]) % 4;
-  };
-
   Game.prototype.targetOf = function (move) {
-    var dir = DIRS[this.absolute(move)];
+    var dir = DIRS[HEADING[move]];
     return { r: this.pos.r + dir.dr, c: this.pos.c + dir.dc };
   };
 
@@ -199,7 +195,7 @@
 
     var target = this.targetOf(move);
     this.busy = true;
-    this.facing = this.absolute(move);
+    this.facing = HEADING[move]; // cosmetic: point the wand the way we went
     this.pos = target;
 
     this.renderer.face(this.facing);

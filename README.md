@@ -8,13 +8,14 @@ phones and desktop, loads instantly, installs nothing.
 
 ## How to play
 
-You start on a marked tile with your wand pointing somewhere. Below the maze
-are the moves available to you — and only the moves available to you. If the
-pad offers *Forward* and *Right*, there are walls to your left and behind you.
-Reading the pad is the whole game: it is the only map you get.
+You start on a marked tile. Below the maze are the moves available to you —
+and only the moves available to you. If the pad offers *Up* and *Right*, there
+are walls below you and to your left. Reading the pad is the whole game: it is
+the only map you get.
 
-Choosing a direction turns the wizard to face it and steps into it, so
-**forward is always wherever you last went**.
+Directions are absolute: *Right* always goes right on screen, whichever way
+the wizard happens to be pointing. He simply turns his wand towards wherever
+he just went.
 
 - **Red ovals are portals.** Step on one and you are pulled to its twin,
   somewhere else in the maze. 15 of the 20 mazes have a pair; in five of those,

@@ -302,8 +302,8 @@ function makeCandidate(mode) {
   if (mode === 'essential' && !portalEssential) return null;
   if (mode === 'bonus' && portalEssential) return null;
 
-  // Initial facing: some direction out of the start that isn't a wall, so the
-  // first turn always offers a "forward".
+  // Initial facing is cosmetic -- movement is absolute -- but point the wand
+  // down an open passage rather than straight into a wall.
   const facings = DIRS.map((d, i) => i).filter((i) =>
     isWalkable(board, start[0] + DIRS[i][0], start[1] + DIRS[i][1])
   );

@@ -225,16 +225,16 @@ body {
   grid-template-columns: repeat(3, var(--pad-size));
   grid-template-rows: repeat(3, var(--pad-size));
   grid-template-areas:
-    ".    fwd  ."
+    ".    up   ."
     "left rune right"
-    ".    back .";
+    ".    down .";
   gap: var(--pad-gap);
   justify-content: center;
   padding: 0.5rem 1rem 1.15rem;
 }
 
-.pad--forward {
-  grid-area: fwd;
+.pad--up {
+  grid-area: up;
 }
 .pad--left {
   grid-area: left;
@@ -242,8 +242,8 @@ body {
 .pad--right {
   grid-area: right;
 }
-.pad--back {
-  grid-area: back;
+.pad--down {
+  grid-area: down;
 }
 
 .pad__rune {
@@ -311,7 +311,7 @@ body {
 .pad--right .pad__arrow {
   transform: rotate(90deg);
 }
-.pad--back .pad__arrow {
+.pad--down .pad__arrow {
   transform: rotate(180deg);
 }
 
