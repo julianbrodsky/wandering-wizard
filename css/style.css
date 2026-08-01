@@ -349,8 +349,14 @@ body {
 .overlay {
   position: fixed;
   inset: 0;
-  display: grid;
-  place-items: center;
+  /* Flex with margin:auto on the card, rather than centred grid: a card
+   * taller than the viewport then scrolls instead of having its top and
+   * bottom clipped past the edges where the buttons live. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 1.5rem;
   background: rgba(7, 7, 12, 0.82);
   backdrop-filter: blur(3px);
@@ -372,6 +378,7 @@ body {
 
 .overlay__card {
   width: min(22rem, 100%);
+  margin: auto;
   padding: 2rem 1.5rem 1.75rem;
   text-align: center;
   border: 1px solid rgba(163, 123, 255, 0.4);
@@ -457,6 +464,93 @@ body {
 
 .overlay__field[hidden] {
   display: none;
+}
+
+.overlay__footer {
+  margin: 1.1rem 0 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--parchment-dim);
+  opacity: 0.75;
+}
+
+/* ------------------------------------------------------------------ *
+ * The revealed map
+ * ------------------------------------------------------------------ */
+
+.overlay__card--map {
+  width: min(24rem, 100%);
+}
+
+.overlay__card[hidden] {
+  display: none;
+}
+
+.overlay__title--sub {
+  margin-bottom: 1rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+}
+
+.map-frame {
+  /* Tie the map to viewport height as well as card width, so a landscape
+   * phone gets a smaller map rather than a card taller than the screen. */
+  max-width: min(100%, 52vh);
+  margin-inline: auto;
+  padding: 0.5rem;
+  border: 1px solid rgba(163, 123, 255, 0.28);
+  border-radius: 0.8rem;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.map-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0.4rem;
+}
+
+.map-legend {
+  display: flex;
+  justify-content: center;
+  gap: 0.9rem;
+  margin: 0.9rem 0 1.1rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: var(--parchment-dim);
+}
+
+.map-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+}
+
+.map-legend li[hidden] {
+  display: none;
+}
+
+.swatch {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 50%;
+}
+
+.swatch--start {
+  border: 2px dashed var(--gold);
+  background: transparent;
+}
+
+.swatch--portal {
+  background: #ff4d5e;
+}
+
+.swatch--exit {
+  background: #fff6dd;
+  box-shadow: 0 0 0.4rem rgba(255, 217, 138, 0.8);
 }
 
 .button {
@@ -556,6 +650,59 @@ body {
 
   .pad__label {
     display: none;
+  }
+}
+
+/* Short viewports (landscape phones): tighten the cards so both the map and
+ * the button that dismisses it stay on screen. */
+@media (max-height: 30rem) {
+  .overlay {
+    padding: 0.75rem;
+  }
+
+  .overlay__card {
+    padding: 1rem 1.1rem;
+  }
+
+  .overlay__spark {
+    display: none;
+  }
+
+  .overlay__title {
+    margin-bottom: 0.7rem;
+    font-size: 1.25rem;
+  }
+
+  .overlay__title--sub {
+    margin-bottom: 0.55rem;
+    font-size: 1rem;
+  }
+
+  .overlay__time {
+    margin-bottom: 0.85rem;
+    padding: 0.45rem 0.8rem;
+  }
+
+  .overlay__time-value {
+    font-size: 1.6rem;
+  }
+
+  .map-frame {
+    max-width: min(100%, 40vh);
+    padding: 0.3rem;
+  }
+
+  .map-legend {
+    margin: 0.55rem 0 0.7rem;
+  }
+
+  .overlay__footer {
+    margin-top: 0.7rem;
+  }
+
+  .button {
+    min-height: 2.6rem;
+    padding: 0.6rem 1.2rem;
   }
 }
 

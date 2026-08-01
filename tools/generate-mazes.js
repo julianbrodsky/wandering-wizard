@@ -33,6 +33,9 @@ const SIZE = 7; // full board including the rim
 const LO = 1; // first interior index
 const HI = 5; // last interior index
 
+// A..T -- twenty letters, skipping U-Z, one per maze.
+const LETTERS = 'ABCDEFGHIJKLMNOPQRST';
+
 const TOTAL_MAZES = 20;
 const PLAIN_MAZES = 5; // no portals
 const ESSENTIAL_PORTAL_MAZES = 5; // unsolvable if the portals were removed
@@ -348,9 +351,8 @@ function buildSet() {
     mazes.push(accepted);
   }
 
-  // Interleave the categories so the first few maps a player sees aren't all
-  // of one kind.
-  return shuffled(mazes).map((maze, i) => ({ id: i + 1, ...maze }));
+  // Interleave the categories so consecutive days aren't all of one kind.
+  return shuffled(mazes).map((maze, i) => ({ letter: LETTERS[i], ...maze }));
 }
 
 /* ------------------------------------------------------------------ *
@@ -363,7 +365,7 @@ function serialize(mazes) {
       const rows = m.grid.map((row) => `      '${row}'`).join(',\n');
       return [
         '    {',
-        `      id: ${m.id},`,
+        `      letter: '${m.letter}',`,
         `      facing: '${m.facing}',`,
         `      shortest: ${m.solution},`,
         '      grid: [',
@@ -384,6 +386,7 @@ function serialize(mazes) {
  *
  *   '#' wall   '.' floor   'S' start   'P' portal (two per maze, linked)   'E' exit
  *
+ * \`letter\` names the map; the game serves them in this order, one per day.
  * \`facing\` is the direction the wizard's wand points on the first turn, and
  * \`shortest\` is the fewest moves in which the maze can be escaped (portals
  * included), verified by the generator.

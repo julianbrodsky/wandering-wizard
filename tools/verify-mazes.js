@@ -18,6 +18,7 @@ const path = require('path');
 const vm = require('vm');
 
 const EXPECTED_COUNT = 20;
+const LETTERS = 'ABCDEFGHIJKLMNOPQRST'; // A..T, skipping U-Z
 const EXPECTED_WITH_PORTALS = 15;
 const SIZE = 7;
 const DIRS = [
@@ -118,7 +119,7 @@ function solver(maze) {
  * ------------------------------------------------------------------ */
 
 function verify(maze) {
-  const id = maze.id;
+  const id = maze.letter;
 
   if (!check(id, Array.isArray(maze.grid) && maze.grid.length === SIZE,
     'grid must have ' + SIZE + ' rows')) return;
@@ -202,9 +203,11 @@ function main() {
   check('set', mazes.length === EXPECTED_COUNT,
     'expected ' + EXPECTED_COUNT + ' mazes, found ' + mazes.length);
 
-  const ids = mazes.map((m) => m.id).join(',');
-  const wanted = mazes.map((_, i) => i + 1).join(',');
-  check('set', ids === wanted, 'ids must run 1..' + mazes.length);
+  const letters = mazes.map((m) => m.letter).join('');
+  const wanted = LETTERS.slice(0, mazes.length);
+  check('set', letters === wanted,
+    'letters must run ' + wanted[0] + '..' + wanted[wanted.length - 1] +
+      ' in order, found ' + letters);
 
   const withPortals = mazes.filter((m) => m.grid.join('').includes('P')).length;
   check('set', withPortals === EXPECTED_WITH_PORTALS,

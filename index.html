@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Wandering Wizard</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="css/style.css?v=3" />
+    <link rel="stylesheet" href="css/style.css?v=5" />
   </head>
   <body>
     <div class="app">
@@ -24,7 +24,7 @@
         <h1 class="hud__title">Wandering Wizard</h1>
         <div class="hud__status">
           <p class="hud__timer" id="timer">0:00</p>
-          <p class="hud__meta" id="maze-label">Maze &mdash;</p>
+          <p class="hud__meta" id="map-label">Map &mdash;</p>
         </div>
       </header>
 
@@ -73,17 +73,15 @@
     </div>
 
     <div class="overlay" id="win-overlay" hidden>
-      <div class="overlay__card" role="alertdialog" aria-labelledby="win-title">
+      <div class="overlay__card" id="win-card" role="alertdialog" aria-labelledby="win-title">
         <p class="overlay__spark" aria-hidden="true">&#10022;</p>
         <h2 class="overlay__title" id="win-title">Ye hath escaped!</h2>
         <p class="overlay__time">
-          <span class="overlay__time-label">Thy time</span>
+          <span class="overlay__time-label">Thy time on map <span id="win-letter">&mdash;</span></span>
           <span class="overlay__time-value" id="win-time">0:00</span>
         </p>
-        <button class="button" type="button" id="new-maze">Try new map</button>
-        <button class="button button--ghost" type="button" id="share">
-          Share thy time
-        </button>
+        <button class="button" type="button" id="share">Share thy time</button>
+        <button class="button button--ghost" type="button" id="see-map">See map</button>
         <p class="overlay__note" id="share-note" role="status" aria-live="polite"></p>
         <!-- Shown only if the clipboard is unavailable, so there is always a
              way to get the message out. -->
@@ -95,6 +93,29 @@
           hidden
           aria-label="Message to copy"
         />
+        <p class="overlay__footer" id="next-map">A new map each day.</p>
+      </div>
+
+      <div
+        class="overlay__card overlay__card--map"
+        id="map-card"
+        role="dialog"
+        aria-labelledby="map-title"
+        hidden
+      >
+        <h2 class="overlay__title overlay__title--sub" id="map-title">
+          Map <span id="map-letter">&mdash;</span>, entire
+        </h2>
+        <div class="map-frame">
+          <svg class="map-svg" id="map-svg" viewBox="0 0 700 700" role="img"
+               aria-label="The full maze, revealed"></svg>
+        </div>
+        <ul class="map-legend">
+          <li><span class="swatch swatch--start"></span>Start</li>
+          <li id="legend-portals"><span class="swatch swatch--portal"></span>Portals</li>
+          <li><span class="swatch swatch--exit"></span>Exit</li>
+        </ul>
+        <button class="button button--ghost" type="button" id="map-back">Back</button>
       </div>
     </div>
 
@@ -105,8 +126,8 @@
       returning player can otherwise end up with a fresh index.html and a
       stale script. Bump ?v= whenever the CSS or JS changes.
     -->
-    <script src="js/mazes.js?v=3"></script>
-    <script src="js/render.js?v=3"></script>
-    <script src="js/game.js?v=3"></script>
+    <script src="js/mazes.js?v=5"></script>
+    <script src="js/render.js?v=5"></script>
+    <script src="js/game.js?v=5"></script>
   </body>
 </html>

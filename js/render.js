@@ -206,6 +206,62 @@
   }
 
   /* ---------------------------------------------------------------- *
+   * The whole map, revealed
+   * ---------------------------------------------------------------- */
+
+  /*
+   * The zoomed-out view shown once a maze is beaten. Floor cells are drawn
+   * flush rather than inset so that open runs read as corridors, and walls are
+   * simply the backdrop showing through. Gradients are referenced by id from
+   * the stage's <defs>, which resolve document-wide.
+   */
+  function mapMarkup(maze) {
+    var w = maze.cols * TILE;
+    var h = maze.rows * TILE;
+    var out =
+      '<rect x="0" y="0" width="' + w + '" height="' + h + '" fill="#0b0912"/>';
+
+    var cells = maze.walkableCells();
+    for (var i = 0; i < cells.length; i++) {
+      var cell = cells[i];
+      var x = cell.c * TILE;
+      var y = cell.r * TILE;
+      out +=
+        '<rect x="' + x + '" y="' + y + '" width="' + TILE + '" height="' +
+        TILE + '" fill="url(#floor)"/>';
+    }
+
+    // Decorations sit above every floor tile so nothing is half-covered by a
+    // neighbouring cell drawn later.
+    for (var j = 0; j < cells.length; j++) {
+      var c2 = cells[j];
+      var cx = c2.c * TILE + HALF;
+      var cy = c2.r * TILE + HALF;
+
+      if (c2.type === 'exit') {
+        out +=
+          '<circle cx="' + cx + '" cy="' + cy + '" r="70" fill="url(#exitGlow)"/>' +
+          '<path d="M' + (cx - 20) + ',' + (cy + 32) + ' V' + (cy - 6) +
+          ' A20,20 0 0 1 ' + (cx + 20) + ',' + (cy - 6) +
+          ' V' + (cy + 32) + ' Z" fill="#fff6dd" opacity="0.95"/>';
+      } else if (c2.type === 'portal') {
+        out +=
+          '<ellipse cx="' + cx + '" cy="' + cy + '" rx="30" ry="21" fill="url(#portal)"/>' +
+          '<ellipse cx="' + cx + '" cy="' + (cy - 4) +
+          '" rx="17" ry="9" fill="#fff" opacity="0.22"/>';
+      } else if (c2.type === 'start') {
+        out +=
+          '<circle cx="' + cx + '" cy="' + cy + '" r="30" fill="none"' +
+          ' stroke="#ffd98a" stroke-opacity="0.85" stroke-width="5"' +
+          ' stroke-dasharray="7 9" stroke-linecap="round"/>' +
+          '<circle cx="' + cx + '" cy="' + cy + '" r="8" fill="#ffd98a" fill-opacity="0.7"/>';
+      }
+    }
+
+    return out;
+  }
+
+  /* ---------------------------------------------------------------- *
    * Renderer
    * ---------------------------------------------------------------- */
 
@@ -289,6 +345,12 @@
 
   Renderer.prototype.clearWarp = function () {
     this.nodes.view.classList.remove('is-warping');
+  };
+
+  /** Fill an <svg> with the fully revealed maze, sized to the board. */
+  Renderer.prototype.drawFullMap = function (svg, maze) {
+    svg.setAttribute('viewBox', '0 0 ' + maze.cols * TILE + ' ' + maze.rows * TILE);
+    svg.innerHTML = mapMarkup(maze);
   };
 
   global.WW = global.WW || {};

@@ -8,6 +8,7 @@
  *
  *   '#' wall   '.' floor   'S' start   'P' portal (two per maze, linked)   'E' exit
  *
+ * `letter` names the map; the game serves them in this order, one per day.
  * `facing` is the direction the wizard's wand points on the first turn, and
  * `shortest` is the fewest moves in which the maze can be escaped (portals
  * included), verified by the generator.
@@ -17,7 +18,7 @@
 
   var MAZES = [
     {
-      id: 1,
+      letter: 'A',
       facing: 'S',
       shortest: 8,
       grid: [
@@ -31,7 +32,7 @@
       ],
     },
     {
-      id: 2,
+      letter: 'B',
       facing: 'E',
       shortest: 8,
       grid: [
@@ -45,7 +46,7 @@
       ],
     },
     {
-      id: 3,
+      letter: 'C',
       facing: 'W',
       shortest: 8,
       grid: [
@@ -59,7 +60,7 @@
       ],
     },
     {
-      id: 4,
+      letter: 'D',
       facing: 'E',
       shortest: 8,
       grid: [
@@ -73,7 +74,7 @@
       ],
     },
     {
-      id: 5,
+      letter: 'E',
       facing: 'S',
       shortest: 10,
       grid: [
@@ -87,7 +88,7 @@
       ],
     },
     {
-      id: 6,
+      letter: 'F',
       facing: 'S',
       shortest: 9,
       grid: [
@@ -101,7 +102,7 @@
       ],
     },
     {
-      id: 7,
+      letter: 'G',
       facing: 'N',
       shortest: 9,
       grid: [
@@ -115,7 +116,7 @@
       ],
     },
     {
-      id: 8,
+      letter: 'H',
       facing: 'E',
       shortest: 8,
       grid: [
@@ -129,7 +130,7 @@
       ],
     },
     {
-      id: 9,
+      letter: 'I',
       facing: 'E',
       shortest: 9,
       grid: [
@@ -143,7 +144,7 @@
       ],
     },
     {
-      id: 10,
+      letter: 'J',
       facing: 'S',
       shortest: 10,
       grid: [
@@ -157,7 +158,7 @@
       ],
     },
     {
-      id: 11,
+      letter: 'K',
       facing: 'N',
       shortest: 8,
       grid: [
@@ -171,7 +172,7 @@
       ],
     },
     {
-      id: 12,
+      letter: 'L',
       facing: 'W',
       shortest: 9,
       grid: [
@@ -185,7 +186,7 @@
       ],
     },
     {
-      id: 13,
+      letter: 'M',
       facing: 'N',
       shortest: 8,
       grid: [
@@ -199,7 +200,7 @@
       ],
     },
     {
-      id: 14,
+      letter: 'N',
       facing: 'N',
       shortest: 9,
       grid: [
@@ -213,7 +214,7 @@
       ],
     },
     {
-      id: 15,
+      letter: 'O',
       facing: 'E',
       shortest: 8,
       grid: [
@@ -227,7 +228,7 @@
       ],
     },
     {
-      id: 16,
+      letter: 'P',
       facing: 'N',
       shortest: 9,
       grid: [
@@ -241,7 +242,7 @@
       ],
     },
     {
-      id: 17,
+      letter: 'Q',
       facing: 'W',
       shortest: 8,
       grid: [
@@ -255,7 +256,7 @@
       ],
     },
     {
-      id: 18,
+      letter: 'R',
       facing: 'N',
       shortest: 9,
       grid: [
@@ -269,7 +270,7 @@
       ],
     },
     {
-      id: 19,
+      letter: 'S',
       facing: 'W',
       shortest: 8,
       grid: [
@@ -283,7 +284,7 @@
       ],
     },
     {
-      id: 20,
+      letter: 'T',
       facing: 'W',
       shortest: 10,
       grid: [

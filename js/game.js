@@ -34,11 +34,68 @@
   };
 
   /* ---------------------------------------------------------------- *
+   * The daily map
+   * ---------------------------------------------------------------- */
+
+  /* Twenty letters, A..T, skipping U-Z. Map A ran on the epoch date and the
+   * set cycles from there, so day 21 comes back around to A. */
+  var LETTERS = 'ABCDEFGHIJKLMNOPQRST';
+  var EPOCH = [2026, 7, 1]; // 2026-08-01, month is 0-based
+  var STORAGE_KEY = 'wandering-wizard/daily';
+
+  /*
+   * A calendar day number. The *local* date fields are fed through Date.UTC so
+   * this is pure calendar arithmetic: subtracting two of these counts days on
+   * the wall calendar, and no daylight-saving shift can drag the boundary onto
+   * the wrong side of midnight.
+   */
+  function dayNumber(date) {
+    return Math.round(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000
+    );
+  }
+
+  /** Which map belongs to `date`. Exported so the rotation can be tested. */
+  function mapIndexFor(date, count) {
+    var epoch = Math.round(Date.UTC(EPOCH[0], EPOCH[1], EPOCH[2]) / 86400000);
+    var offset = (dayNumber(date) - epoch) % count;
+    return (offset + count) % count; // a clock set backwards still lands somewhere
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Saved progress
+   * ---------------------------------------------------------------- */
+
+  /*
+   * One map a day means a reload must not hand out a fresh attempt, so the run
+   * is written down as it happens and picked back up on load. Storage can be
+   * unavailable outright (private windows, disabled cookies); when it is, the
+   * game still plays perfectly well and simply forgets between visits.
+   */
+  var Store = {
+    read: function () {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (error) {
+        return null;
+      }
+    },
+    write: function (state) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        /* nothing to do; the run just will not survive a reload */
+      }
+    },
+  };
+
+  /* ---------------------------------------------------------------- *
    * Maze model
    * ---------------------------------------------------------------- */
 
   function Maze(data) {
-    this.id = data.id;
+    this.letter = data.letter;
     this.grid = data.grid;
     this.rows = data.grid.length;
     this.cols = data.grid[0].length;
@@ -128,6 +185,29 @@
     }, 200);
   };
 
+  /* Pick a run back up mid-flight. Time spent away from the page is not
+   * charged: the clock restarts as though the player had only just reached
+   * the elapsed total they left on. */
+  Clock.prototype.resume = function (ms) {
+    if (this.ticker) clearInterval(this.ticker);
+    var self = this;
+    this.stoppedMs = null;
+    this.startedAt = Date.now() - ms;
+    this.ticker = setInterval(function () {
+      self.render(self.elapsed());
+    }, 200);
+    this.render(ms);
+  };
+
+  /* A finished run, restored from storage: the total is fixed, nothing ticks. */
+  Clock.prototype.freeze = function (ms) {
+    if (this.ticker) clearInterval(this.ticker);
+    this.ticker = null;
+    this.startedAt = Date.now() - ms;
+    this.stoppedMs = ms;
+    this.render(ms);
+  };
+
   Clock.prototype.stop = function () {
     if (this.startedAt !== null && this.stoppedMs === null) {
       this.stoppedMs = Date.now() - this.startedAt;
@@ -161,14 +241,14 @@
     this.clock = new Clock(nodes.timer);
     this.busy = false;
     this.won = false;
-    this.currentIndex = -1;
+    this.day = dayNumber(new Date());
     this.timers = [];
 
     this.moveMs = cssMs('--move-ms', 280);
     this.warpMs = 340;
 
     this.bindInput();
-    this.loadRandomMaze();
+    this.loadToday();
   }
 
   /* Read an animation length out of the stylesheet so the pacing of the game
@@ -201,44 +281,77 @@
    * Loading a maze
    * ---------------------------------------------------------------- */
 
-  Game.prototype.loadIndex = function (index) {
-    this.currentIndex = index;
-    this.load(new Maze(this.mazes[index]));
-  };
+  /*
+   * Everyone gets the same map on the same day, and only that one. A run in
+   * progress is restored exactly where it was left, so a reload is not a way
+   * to start the day's map over on a fresh clock.
+   */
+  Game.prototype.loadToday = function () {
+    var index = mapIndexFor(new Date(), this.mazes.length);
+    var maze = new Maze(this.mazes[index]);
+    var saved = Store.read();
+    var resume = saved && saved.day === this.day ? saved : null;
 
-  Game.prototype.loadRandomMaze = function () {
-    var index = Math.floor(Math.random() * this.mazes.length);
-    // Never hand back the maze that was just played.
-    if (this.mazes.length > 1 && index === this.currentIndex) {
-      index = (index + 1 + Math.floor(Math.random() * (this.mazes.length - 1)))
-        % this.mazes.length;
-    }
-    this.loadIndex(index);
-  };
-
-  Game.prototype.load = function (maze) {
     this.clearTimers();
     this.clock.reset();
     this.resetShare();
+    this.showPanel('win');
+
     this.maze = maze;
-    this.pos = { r: maze.start.r, c: maze.start.c };
-    this.facing = maze.facing;
-    this.moved = false;
-    this.won = false;
     this.busy = false;
+    this.won = false;
+
+    if (resume) {
+      this.pos = { r: resume.pos.r, c: resume.pos.c };
+      this.facing = resume.facing;
+      this.moved = resume.moved;
+      this.won = !!resume.done;
+    } else {
+      this.pos = { r: maze.start.r, c: maze.start.c };
+      this.facing = maze.facing;
+      this.moved = false;
+    }
 
     this.renderer.clearWarp();
     this.renderer.loadMaze(maze);
+    if (this.moved) this.renderer.hideStartRune();
     this.renderer.light(this.pos.r, this.pos.c);
     this.renderer.moveTo(this.pos.r, this.pos.c, true);
     this.renderer.face(this.facing, true);
 
-    this.nodes.label.textContent =
-      'Maze ' + maze.id + ' of ' + this.mazes.length;
-    this.nodes.overlay.hidden = true;
+    this.nodes.label.textContent = 'Map ' + maze.letter;
+    this.nodes.winLetter.textContent = maze.letter;
+    this.nodes.mapLetter.textContent = maze.letter;
+
+    if (this.won) {
+      this.clock.freeze(resume.elapsed || 0);
+      this.showWin(true);
+      this.announce(
+        'Map ' + maze.letter + ' is already escaped, in ' +
+          formatTime(this.clock.elapsed()) + '. A new map arrives tomorrow.'
+      );
+    } else {
+      this.nodes.overlay.hidden = true;
+      if (this.moved) this.clock.resume(resume.elapsed || 0);
+      this.announce(
+        (resume ? 'Map ' + maze.letter + ', resumed. ' : 'Map ' + maze.letter + '. ') +
+          this.pathsSentence()
+      );
+    }
 
     this.refreshControls();
-    this.announce('A new maze. ' + this.pathsSentence());
+  };
+
+  Game.prototype.save = function () {
+    Store.write({
+      day: this.day,
+      letter: this.maze.letter,
+      pos: this.pos,
+      facing: this.facing,
+      moved: this.moved,
+      elapsed: this.clock.elapsed(),
+      done: this.won,
+    });
   };
 
   /* ---------------------------------------------------------------- *
@@ -291,6 +404,7 @@
     this.after(this.moveMs, function () {
       self.busy = false;
       self.refreshControls();
+      self.save();
       self.announce(self.pathsSentence());
     });
   };
@@ -309,6 +423,7 @@
         self.renderer.clearWarp();
         self.busy = false;
         self.refreshControls();
+        self.save();
         self.announce('A portal pulls you elsewhere. ' + self.pathsSentence());
       });
     });
@@ -319,13 +434,40 @@
     this.won = true;
     // Stopped on the step that wins it, not when the card animates in.
     this.clock.stop();
+    this.save();
+    this.refreshControls();
 
     this.after(this.moveMs + 420, function () {
-      self.nodes.winTime.textContent = formatTime(self.clock.elapsed());
-      self.nodes.overlay.hidden = false;
-      self.nodes.newMaze.focus();
+      self.showWin(false);
       self.announce('Ye hath escaped, in ' + formatTime(self.clock.elapsed()) + '.');
     });
+  };
+
+  /* ---------------------------------------------------------------- *
+   * Victory, and the map behind it
+   * ---------------------------------------------------------------- */
+
+  Game.prototype.showWin = function (instant) {
+    this.nodes.winTime.textContent = formatTime(this.clock.elapsed());
+    this.nodes.overlay.hidden = false;
+    this.showPanel('win');
+    // Restoring a finished run on load should not steal focus from the page;
+    // only a win the player just earned pulls focus to the card.
+    if (!instant) this.nodes.share.focus();
+  };
+
+  Game.prototype.showPanel = function (which) {
+    this.nodes.winCard.hidden = which !== 'win';
+    this.nodes.mapCard.hidden = which !== 'map';
+  };
+
+  Game.prototype.seeMap = function () {
+    this.renderer.drawFullMap(this.nodes.mapSvg, this.maze);
+    // A quarter of the maps have no portals; don't key a legend to nothing.
+    this.nodes.legendPortals.hidden = this.maze.portals.length === 0;
+    this.showPanel('map');
+    this.nodes.mapBack.focus();
+    this.announce('The whole of map ' + this.maze.letter + ', revealed.');
   };
 
   /* ---------------------------------------------------------------- *
@@ -338,8 +480,8 @@
 
   Game.prototype.shareMessage = function () {
     return (
-      'I escaped maze ' + this.maze.id + ' of ' + this.mazes.length +
-      ' in ' + formatTime(this.clock.elapsed()) + '. Ye hath escaped!'
+      'Ye hath escaped map ' + this.maze.letter + ' in ' +
+      formatTime(this.clock.elapsed()) + '.'
     );
   };
 
@@ -457,7 +599,9 @@
   Game.prototype.refreshControls = function () {
     for (var i = 0; i < MOVE_ORDER.length; i++) {
       var move = MOVE_ORDER[i];
-      this.nodes.pads[move].hidden = !this.canMove(move);
+      // Once the map is beaten the pad is done for the day, whatever the
+      // walls around the exit happen to allow.
+      this.nodes.pads[move].hidden = this.won || !this.canMove(move);
     }
   };
 
@@ -487,20 +631,43 @@
       if (button) self.move(button.getAttribute('data-move'));
     });
 
-    this.nodes.newMaze.addEventListener('click', function () {
-      self.loadRandomMaze();
-    });
-
     this.nodes.share.addEventListener('click', function () {
       self.share();
     });
 
+    this.nodes.seeMap.addEventListener('click', function () {
+      self.seeMap();
+    });
+
+    this.nodes.mapBack.addEventListener('click', function () {
+      self.showPanel('win');
+      self.nodes.seeMap.focus();
+    });
+
     document.addEventListener('keydown', function (event) {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+      if (event.key === 'Escape' && !self.nodes.mapCard.hidden) {
+        event.preventDefault();
+        self.showPanel('win');
+        self.nodes.seeMap.focus();
+        return;
+      }
+
       var move = KEYS[event.key] || KEYS[event.key.toLowerCase()];
       if (!move) return;
       event.preventDefault();
       self.move(move);
+    });
+
+    /* Write the run down before the page goes away, so closing the tab
+     * mid-maze costs at most the seconds since the last move. */
+    var persist = function () {
+      if (self.maze) self.save();
+    };
+    window.addEventListener('pagehide', persist);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') persist();
     });
   };
 
@@ -518,8 +685,6 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    // Kept on WW purely as a console handle: `WW.game.loadIndex(6)` jumps
-    // straight to a given maze, which beats reloading until one comes up.
     global.WW.game = new Game(
       {
         stage: document.getElementById('stage'),
@@ -530,17 +695,29 @@
         view: document.querySelector('.view'),
         controls: document.getElementById('controls'),
         overlay: document.getElementById('win-overlay'),
-        newMaze: document.getElementById('new-maze'),
+        winCard: document.getElementById('win-card'),
+        mapCard: document.getElementById('map-card'),
+        mapSvg: document.getElementById('map-svg'),
+        mapBack: document.getElementById('map-back'),
+        legendPortals: document.getElementById('legend-portals'),
+        seeMap: document.getElementById('see-map'),
         share: document.getElementById('share'),
         shareNote: document.getElementById('share-note'),
         shareField: document.getElementById('share-field'),
         winTime: document.getElementById('win-time'),
+        winLetter: document.getElementById('win-letter'),
+        mapLetter: document.getElementById('map-letter'),
         timer: document.getElementById('timer'),
-        label: document.getElementById('maze-label'),
+        label: document.getElementById('map-label'),
         announcer: document.getElementById('announcer'),
         pads: pads(),
       },
       global.WW.MAZES
     );
   });
+
+  /* Exported so the rotation can be checked against arbitrary dates without
+   * having to wait for one. */
+  global.WW.mapIndexFor = mapIndexFor;
+  global.WW.LETTERS = LETTERS;
 })(typeof window !== 'undefined' ? window : globalThis);
